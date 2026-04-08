@@ -1,4 +1,4 @@
-# 💸 Smart Spend - Intelligent Personal Finance Tracker
+# Smart Spend - Your Personal Finance Tracker
 
 **Smart Spend** is a real-world task environment and agentic solution for optimizing personal finances via automated transaction detection and smart budget management. Built for compliance with the OpenEnv specification and optimized for Hugging Face Spaces.
 
