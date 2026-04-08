@@ -1,0 +1,36 @@
+name: personal-expense-optimizer
+version: 1.0.0
+description: "Real-world task: Personal expense optimization using SMS transaction simulation"
+
+entry_point: app.py:app
+type: env
+
+action_space:
+  type: categorical
+  actions: 
+    - allocate_budget
+    - adjust_category
+    - set_savings_goal
+    - defer_expense
+
+observation_space:
+  type: dict
+  fields:
+    day: "int (1-30)"
+    total_balance: "float"
+    category_budgets: "dict[str, float]"
+    category_spent: "dict[str, float]"
+    recent_transactions: "list[Transaction]"
+    monthly_income: "float"
+    savings_goal_percentage: "float"
+
+tasks:
+  - id: budget_adherence_easy
+    difficulty: easy
+    description: "Stay within 10% of daily budget for at least 7 days."
+  - id: category_optimization_medium
+    difficulty: medium
+    description: "Optimize budget across 5 categories and reduce spending by 15%."
+  - id: predictive_budgeting_hard
+    difficulty: hard
+    description: "Achieve 25% savings by strategic deferral of discretionary expenses."

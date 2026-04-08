@@ -1,4 +1,4 @@
-﻿from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sys
 import os
@@ -60,7 +60,15 @@ def env_info():
 def reset_env():
     """Reset environment to initial state."""
     global current_episode_stats
-    current_episode_stats = {}
+    current_episode_stats = {
+        "days_on_budget": 0,
+        "total_savings": 0.0,
+        "total_spent": 0.0,
+        "overspend_count": 0,
+        "deferred_expenses": [],
+        "category_spent": {},
+        "monthly_budget": env.monthly_income
+    }
     
     try:
         reset_output = env.reset()
@@ -117,7 +125,12 @@ def step_env():
         obs = step_output.observation
         current_episode_stats['days_on_budget'] = obs.days_on_budget
         current_episode_stats['total_savings'] = obs.current_savings
-        current_episode_stats['total_spent'] = obs.current_savings
+        current_episode_stats['total_spent'] = env.total_spent
+        current_episode_stats['overspend_count'] = obs.overspend_count
+        current_episode_stats['category_spent'] = obs.category_spent
+        current_episode_stats['deferred_expenses'] = env.deferred_expenses
+        current_episode_stats['savings_rate'] = obs.current_savings / env.monthly_income if env.monthly_income > 0 else 0
+        current_episode_stats['final_savings'] = obs.current_savings
         
         # Convert to JSON-serializable format
         obs_dict = step_output.observation.model_dump(mode='json')
