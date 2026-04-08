@@ -1,0 +1,246 @@
+---
+metadata:
+  name: "personal-expense-optimizer"
+  version: "1.0.0"
+  author: "AI Hackathon Participant"
+  description: |
+    A real-world personal finance optimization environment. 
+    Agents must allocate a ₹50,000 monthly budget across 5 spending categories 
+    (Food & Dining, Transport, Shopping, Health, Bills) while meeting savings goals 
+    and staying within category-level budget constraints.
+    
+    The environment simulates realistic SMS transaction patterns and requires agents
+    to make daily spending decisions, adjust allocations, and strategically defer
+    discretionary expenses.
+
+  domain: "finance"
+  task_type: "budget-optimization"
+  difficulty_range: ["easy", "medium", "hard"]
+  
+  # Real-world utility
+  real_world_alignment: |
+    - Personal finance is a genuine, high-stakes domain
+    - Budget optimization directly mirrors how real people manage money
+    - Realistic SMS transaction patterns from actual spending categories
+    - Multi-objective: maximize savings while maintaining quality of life
+    - Clear economic incentives and constraints
+
+observation_space:
+  type: "dict"
+  fields:
+    day:
+      type: "integer"
+      min: 1
+      max: 30
+      description: "Current day of month (episode length = 30 days)"
+    
+    total_balance:
+      type: "float"
+      min: 0
+      unit: "INR"
+      description: "Remaining balance in monthly budget"
+    
+    category_budgets:
+      type: "dict"
+      key_type: "string"
+      value_type: "float"
+      description: "Allocated budget per category (5 categories)"
+      categories:
+        - "Food & Dining"
+        - "Transport"
+        - "Shopping"
+        - "Health"
+        - "Bills"
+    
+    category_spent:
+      type: "dict"
+      key_type: "string"
+      value_type: "float"
+      description: "Amount already spent in each category"
+    
+    category_remaining:
+      type: "dict"
+      key_type: "string"
+      value_type: "float"
+      description: "Remaining budget in each category"
+    
+    recent_transactions:
+      type: "list"
+      max_length: 5
+      item_type: "Transaction"
+      description: "Last 5 transactions (date, amount, category, description)"
+    
+    pending_transaction:
+      type: "Transaction"
+      nullable: true
+      description: "Current unprocessed transaction awaiting agent decision"
+    
+    monthly_income:
+      type: "float"
+      unit: "INR"
+      description: "Total monthly income (fixed at ₹50,000)"
+    
+    savings_goal_percentage:
+      type: "float"
+      min: 0
+      max: 1
+      description: "Target savings as percentage of income"
+    
+    current_savings:
+      type: "float"
+      unit: "INR"
+      description: "Amount saved so far"
+    
+    projected_savings:
+      type: "float"
+      unit: "INR"
+      description: "Estimated final savings if no more transactions"
+    
+    days_on_budget:
+      type: "integer"
+      description: "Number of days agent stayed within all category budgets"
+    
+    overspend_count:
+      type: "integer"
+      description: "Number of times agent exceeded a category budget"
+
+action_space:
+  type: "discrete"
+  num_actions: 4
+  actions:
+    - name: "allocate_budget"
+      description: "Adjust overall monthly budget allocation (redistribute across all categories)"
+      parameters:
+        amount:
+          type: "float"
+          default: 50000
+          description: "Total monthly budget in INR"
+    
+    - name: "adjust_category"
+      description: "Change budget for a specific category"
+      parameters:
+        category:
+          type: "string"
+          required: true
+          description: "Target spending category"
+        amount:
+          type: "float"
+          required: true
+          description: "New budget allocation for this category in INR"
+    
+    - name: "set_savings_goal"
+      description: "Set or modify the target savings percentage"
+      parameters:
+        amount:
+          type: "float"
+          min: 0
+          max: 50
+          description: "Target savings percentage (0-50%)"
+    
+    - name: "defer_expense"
+      description: "Defer a discretionary transaction to next month"
+      parameters:
+        defer_days:
+          type: "integer"
+          default: 7
+          description: "Days to defer the transaction"
+
+reward:
+  type: "continuous"
+  range: [-1.0, 1.0]
+  components:
+    budget_adherence: "Reward for staying within category limits (-1 to 1)"
+    savings_progress: "Reward for progressing toward savings goal (-1 to 1)"
+    category_balance: "Reward for balanced spending (-1 to 1)"
+    transaction_decision: "Reward for smart transaction decisions (-1 to 1)"
+    overspend_penalty: "Penalty for exceeding limits"
+  
+  shaping:
+    - Partial signals: Agent receives feedback every step (not sparse)
+    - Budget violations: -0.5 penalty per day
+    - Savings milestone: Bonus rewards when meeting intermediate targets
+    - Decision quality: Rewards for deferring discretionary vs essential expenses
+
+episode:
+  max_steps: 30
+  initial_state: "First day of month with full budget"
+  terminal_conditions:
+    - "30 days elapsed (one full month)"
+  reset_between_tasks: true
+  deterministic: false
+  stochastic_elements:
+    - "Transaction amounts (realistic distributions)"
+    - "Transaction timing (varies per day)"
+    - "Merchant selection (random per category)"
+
+tasks:
+  - task_id: "budget_adherence_easy"
+    difficulty: "easy"
+    description: "Stay within 10% of daily budget for at least 7 days in a 30-day month"
+    success_criteria:
+      days_on_budget_minimum: 7
+      budget_overrun_tolerance: 0.10
+    max_episodes: 1
+    estimated_difficulty: "A reasonable agent achieves this baseline"
+    
+  - task_id: "category_optimization_medium"
+    difficulty: "medium"
+    description: |
+      Allocate budget optimally across 5 categories and reduce spending by 15% 
+      while staying within limits for 20+ days. Requires strategic planning.
+    success_criteria:
+      days_on_budget_minimum: 20
+      spending_reduction: 0.15
+      savings_rate_target: 0.20
+      category_balance_score: 0.7
+    max_episodes: 1
+    estimated_difficulty: "Frontier models should solve this with careful planning"
+    
+  - task_id: "predictive_budgeting_hard"
+    difficulty: "hard"
+    description: |
+      Achieve 25% savings by predicting expenses and strategically deferring 
+      discretionary expenses. Requires multi-step lookahead and constraint satisfaction.
+    success_criteria:
+      savings_rate_target: 0.25
+      days_on_budget_minimum: 25
+      deferred_expenses_count_minimum: 5
+    max_episodes: 1
+    estimated_difficulty: "Challenging even for advanced models; tests planning and foresight"
+
+specification_compliance:
+  openenv_version: "1.0"
+  required_methods:
+    - "reset(): ResetOutput"
+    - "step(action: Action) -> StepOutput"
+    - "state() -> Dict"
+  
+  type_safety:
+    - "All observations use Pydantic models (typed)"
+    - "All actions validated against ActionType enum"
+    - "Reward structured with component breakdown"
+    - "Task graders return 0.0-1.0 scores deterministically"
+  
+  graders:
+    - "grade_easy: Deterministic, 0-1 scale"
+    - "grade_medium: Deterministic, 0-1 scale, multi-criteria"
+    - "grade_hard: Deterministic, 0-1 scale, multi-criteria"
+
+deployment:
+  containerized: true
+  cpu_requirement: "0.5 vCPU"
+  memory_requirement: "512 MB"
+  estimated_runtime: "< 1 second per episode"
+  
+  huggingface_space:
+    name: "personal-expense-optimizer"
+    tags: ["openenv", "finance", "reinforcement-learning"]
+
+validation:
+  has_openenv_yaml: true
+  has_dockerfile: true
+  has_baseline_script: true
+  has_readme: true
+  baseline_reproducible: true
+  graders_deterministic: true
+  task_difficulty_progression: true

@@ -1,0 +1,208 @@
+﻿from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+import sys
+import os
+import json
+from pathlib import Path
+
+# Add env to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from env.finance_env import PersonalExpenseOptimizer
+from env.models import Action, ActionType, TaskInfo
+from env.tasks import TaskGrader
+
+# Configure Flask to serve static files from frontend folder
+frontend_folder = os.path.join(os.path.dirname(__file__), '..', 'frontend')
+app = Flask(__name__, static_folder=frontend_folder, static_url_path='')
+CORS(app)
+
+# Initialize environment and grader
+env = PersonalExpenseOptimizer()
+grader = TaskGrader()
+current_episode_stats = {}
+
+@app.route('/')
+def home():
+    return send_from_directory(frontend_folder, 'index.html')
+
+
+# ============= OpenEnv API Endpoints =============
+
+@app.route('/api/env/info', methods=['GET'])
+def env_info():
+    """Get environment metadata."""
+    return jsonify({
+        "name": "personal-expense-optimizer",
+        "version": "1.0.0",
+        "description": "Real-world task: Personal expense optimization using SMS transaction simulation",
+        "action_space": {
+            "type": "categorical",
+            "actions": ["allocate_budget", "adjust_category", "set_savings_goal", "defer_expense"]
+        },
+        "observation_space": {
+            "type": "dict",
+            "fields": {
+                "day": "int (1-30)",
+                "total_balance": "float",
+                "category_budgets": "dict[str, float]",
+                "category_spent": "dict[str, float]",
+                "recent_transactions": "list[Transaction]",
+                "monthly_income": "float",
+                "savings_goal_percentage": "float"
+            }
+        },
+        "reward_range": [-1.0, 1.0]
+    })
+
+
+@app.route('/api/env/reset', methods=['POST'])
+def reset_env():
+    """Reset environment to initial state."""
+    global current_episode_stats
+    
+    try:
+        reset_output = env.reset()
+        
+        # Initialize episode stats
+        current_episode_stats = {
+            "monthly_budget": env.monthly_budget,
+            "days_on_budget": 0,
+            "category_spent": env.category_spent.copy(),
+            "deferred_expenses": [],
+            "overspend_count": 0,
+        }
+        
+        # Convert observation to JSON-serializable dict
+        obs_dict = reset_output.observation.model_dump(mode='json')
+        
+        return jsonify({
+            "observation": obs_dict,
+            "info": reset_output.info
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route('/api/env/step', methods=['POST'])
+def step_env():
+    """Execute one step in the environment."""
+    try:
+        action_data = request.json
+        
+        # Parse action
+        action_type = action_data.get('action_type')
+        
+        # Create Action object based on type
+        if action_type == 'allocate_budget':
+            action = Action(
+                action_type=ActionType.ALLOCATE_BUDGET,
+                amount=action_data.get('amount', env.monthly_budget)
+            )
+        elif action_type == 'adjust_category':
+            action = Action(
+                action_type=ActionType.ADJUST_CATEGORY,
+                category=action_data.get('category'),
+                amount=action_data.get('amount', 0)
+            )
+        elif action_type == 'set_savings_goal':
+            action = Action(
+                action_type=ActionType.SET_SAVINGS_GOAL,
+                amount=action_data.get('amount', 20)  # Percentage
+            )
+        elif action_type == 'defer_expense':
+            action = Action(
+                action_type=ActionType.DEFER_EXPENSE,
+                defer_days=action_data.get('defer_days', 7)
+            )
+        else:
+            return jsonify({"error": f"Unknown action type: {action_type}"}), 400
+        
+        # Step environment
+        step_output = env.step(action)
+        
+        # Update stats for grading
+        obs = step_output.observation
+        current_episode_stats['days_on_budget'] = obs.days_on_budget
+        current_episode_stats['category_spent'] = obs.category_spent.copy()
+        current_episode_stats['overspend_count'] = obs.overspend_count
+        current_episode_stats['deferred_expenses'] = env.deferred_expenses.copy()
+        
+        if step_output.done:
+            # Final calculations
+            final_savings = env.monthly_budget - env.total_spent
+            current_episode_stats['final_savings'] = final_savings
+            current_episode_stats['savings_rate'] = final_savings / env.monthly_budget
+        
+        # Convert to JSON-serializable format
+        obs_dict = step_output.observation.model_dump(mode='json')
+        reward_dict = step_output.reward.model_dump(mode='json')
+        
+        return jsonify({
+            "observation": obs_dict,
+            "reward": reward_dict,
+            "done": step_output.done,
+            "info": step_output.info
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 400
+
+
+@app.route('/api/env/state', methods=['GET'])
+def get_state():
+    """Get current environment state."""
+    try:
+        state = env.state()
+        return jsonify(state)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route('/api/tasks', methods=['GET'])
+def get_tasks():
+    """Get all available tasks."""
+    return jsonify({
+        task_id: {
+            "id": task_id,
+            "difficulty": task.difficulty,
+            "description": task.description,
+            "success_criteria": task.success_criteria
+        }
+        for task_id, task in grader.TASKS.items()
+    })
+
+
+@app.route('/api/tasks/<task_id>/grade', methods=['POST'])
+def grade_task(task_id):
+    """Grade the completed task."""
+    try:
+        # Use provided stats or current episode stats
+        episode_stats = request.json if request.json else current_episode_stats
+        
+        if task_id not in grader.TASKS:
+            return jsonify({"error": f"Unknown task: {task_id}"}), 400
+        
+        # Grade the episode
+        grade = grader.grade_episode(task_id, episode_stats)
+        
+        return jsonify({
+            "task_id": grade.task_id,
+            "score": grade.score,
+            "passed": grade.passed,
+            "details": grade.details,
+            "criteria_scores": grade.criteria_scores
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 400
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint."""
+    return jsonify({"status": "healthy"})
+
+if __name__ == "__main__":
+    app.run(debug=True)
+

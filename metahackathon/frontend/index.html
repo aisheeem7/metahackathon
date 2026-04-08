@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Spend – Personal Finance Tracker</title>
+  <meta name="description" content="Smart Spend – Automatically detect transactions from SMS, track expenses, set budgets, and get smart financial insights in INR." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ════════════════════ AUTH PAGES ════════════════════ -->
+  <div id="auth-wrapper" class="auth-wrapper">
+    <!-- Sign In -->
+    <div id="page-signin" class="auth-page active">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="brand-logo">💸</div>
+          <h1 class="brand-name">Smart Spend</h1>
+          <p class="brand-tagline">Your intelligent money companion</p>
+        </div>
+        <form id="signin-form" class="auth-form" novalidate>
+          <h2 class="form-title">Welcome back</h2>
+          <p class="form-subtitle">Sign in to your account</p>
+          <div class="form-group">
+            <label for="signin-email">Email address</label>
+            <input type="email" id="signin-email" placeholder="you@example.com" autocomplete="email" required />
+            <span class="field-error" id="signin-email-err"></span>
+          </div>
+          <div class="form-group">
+            <label for="signin-password">Password</label>
+            <div class="input-wrap">
+              <input type="password" id="signin-password" placeholder="Enter your password" autocomplete="current-password" required />
+              <button type="button" class="toggle-pw" onclick="togglePw('signin-password', this)" aria-label="Toggle password visibility"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+            <span class="field-error" id="signin-pw-err"></span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full" id="signin-btn">Sign In</button>
+          <p class="auth-switch">Don't have an account? <a href="#" onclick="showAuthPage('page-signup')">Create one</a></p>
+        </form>
+      </div>
+      <div class="auth-visual">
+        <div class="visual-content">
+          <div class="vis-icon-wrap"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <h3>Track, Save, Thrive</h3>
+          <p>Auto-detect transactions from SMS, set budgets in INR, and get personalized insights to reach your financial goals.</p>
+          <ul class="vis-features">
+            <li><span class="feat-check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Auto SMS transaction detection</li>
+            <li><span class="feat-check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Smart spending analytics</li>
+            <li><span class="feat-check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Gamified badge system</li>
+            <li><span class="feat-check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Budget alert warnings</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sign Up -->
+    <div id="page-signup" class="auth-page">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="brand-logo">💸</div>
+          <h1 class="brand-name">Smart Spend</h1>
+          <p class="brand-tagline">Your intelligent money companion</p>
+        </div>
+        <form id="signup-form" class="auth-form" novalidate>
+          <h2 class="form-title">Create account</h2>
+          <p class="form-subtitle">Start your financial journey today</p>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="signup-fname">First name</label>
+              <input type="text" id="signup-fname" placeholder="Priya" required />
+              <span class="field-error" id="signup-fname-err"></span>
+            </div>
+            <div class="form-group">
+              <label for="signup-lname">Last name</label>
+              <input type="text" id="signup-lname" placeholder="Sharma" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="signup-email">Email address</label>
+            <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" required />
+            <span class="field-error" id="signup-email-err"></span>
+          </div>
+          <div class="form-group">
+            <label for="signup-daily-limit">Daily spending limit (₹)</label>
+            <div class="input-wrap">
+              <span class="input-prefix">₹</span>
+              <input type="number" id="signup-daily-limit" placeholder="500" min="1" required />
+            </div>
+            <span class="field-hint">You can change this anytime in your profile</span>
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <div class="input-wrap">
+              <input type="password" id="signup-password" placeholder="Min. 8 characters" autocomplete="new-password" required />
+              <button type="button" class="toggle-pw" onclick="togglePw('signup-password', this)" aria-label="Toggle password visibility"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+            <div class="pw-strength" id="pw-strength-bar"><div class="pw-strength-fill" id="pw-strength-fill"></div></div>
+            <span class="field-error" id="signup-pw-err"></span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full" id="signup-btn">Create Account</button>
+          <p class="auth-switch">Already have an account? <a href="#" onclick="showAuthPage('page-signin')">Sign in</a></p>
+        </form>
+      </div>
+      <div class="auth-visual">
+        <div class="visual-content">
+          <div class="vis-icon-wrap"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+          <h3>Begin Your Savings Journey</h3>
+          <p>Join thousands of users managing their money smarter with Smart Spend — India's cleanest finance tracker.</p>
+          <ul class="vis-features">
+            <li><span class="feat-check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Built for Indian users (INR)</li>
+            <li><span class="feat-check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Secure &amp; private</li>
+            <li><span class="feat-check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Works on any device</li>
+            <li><span class="feat-check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Completely free</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ APP SHELL ════════════════════ -->
+  <div id="app-shell" class="app-shell hidden">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <span class="sidebar-logo">💸</span>
+        <span>Smart Spend</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#dashboard" class="nav-link active" id="nav-dashboard" onclick="navigate('dashboard')">
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="5" height="8" rx="1"/><rect x="10" y="8" width="5" height="14" rx="1"/><rect x="18" y="2" width="5" height="20" rx="1"/></svg></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+        <a href="#transactions" class="nav-link" id="nav-transactions" onclick="navigate('transactions')">
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>
+          <span class="nav-label">Transactions</span>
+        </a>
+        <a href="#expenses" class="nav-link" id="nav-expenses" onclick="navigate('expenses')">
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span>
+          <span class="nav-label">Add Expense</span>
+        </a>
+        <a href="#analytics" class="nav-link" id="nav-analytics" onclick="navigate('analytics')">
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+          <span class="nav-label">Analytics</span>
+        </a>
+        <a href="#budget" class="nav-link" id="nav-budget" onclick="navigate('budget')">
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+          <span class="nav-label">Budget</span>
+        </a>
+        <a href="#badges" class="nav-link" id="nav-badges" onclick="navigate('badges')">
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.56 14.85L6 22l6-3.5L18 22l-2.56-7.15"/></svg></span>
+          <span class="nav-label">Badges</span>
+        </a>
+        <a href="#profile" class="nav-link" id="nav-profile" onclick="navigate('profile')">
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+          <span class="nav-label">Profile</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user" id="sidebar-user">
+          <div class="avatar-sm" id="sidebar-avatar">P</div>
+          <div class="sidebar-user-info">
+            <span class="sidebar-user-name" id="sidebar-user-name">Priya</span>
+            <span class="sidebar-user-email" id="sidebar-user-email">priya@example.com</span>
+          </div>
+        </div>
+        <button class="btn-signout" onclick="signOut()" title="Sign out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+      </div>
+    </aside>
+
+    <!-- Mobile top bar -->
+    <header class="topbar">
+      <div class="brand-icon-sm">💸</div>
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+      <div class="topbar-right">
+        <span class="topbar-date" id="topbar-date"></span>
+        <div class="avatar-sm" id="topbar-avatar">P</div>
+      </div>
+    </header>
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="bottom-nav">
+      <a href="#dashboard" class="bnav-link active" id="bnav-dashboard" onclick="navigate('dashboard')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="5" height="8" rx="1"/><rect x="10" y="8" width="5" height="14" rx="1"/><rect x="18" y="2" width="5" height="20" rx="1"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="#transactions" class="bnav-link" id="bnav-transactions" onclick="navigate('transactions')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span>Txns</span>
+      </a>
+      <a href="#expenses" class="bnav-link bnav-add" id="bnav-expenses" onclick="navigate('expenses')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        <span>Add</span>
+      </a>
+      <a href="#analytics" class="bnav-link" id="bnav-analytics" onclick="navigate('analytics')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Insights</span>
+      </a>
+      <a href="#profile" class="bnav-link" id="bnav-profile" onclick="navigate('profile')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Profile</span>
+      </a>
+    </nav>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <div id="toast-container" class="toast-container"></div>
+
+      <!-- ── DASHBOARD ── -->
+      <section class="view active" id="view-dashboard">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Dashboard</h2>
+            <p class="page-subtitle" id="dash-greeting">Good morning, Priya</p>
+          </div>
+          <div class="header-actions">
+            <span class="sms-status-chip" id="sms-status-chip">
+              <span class="sms-dot"></span><span id="sms-status-text">SMS Off</span>
+            </span>
+            <span class="badge-count" id="dash-badge-count">0 badges</span>
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="cards-grid" id="summary-cards">
+          <div class="card card-stat card-balance">
+            <div class="stat-label">Net Balance</div>
+            <div class="stat-value balance-value" id="stat-balance">₹0</div>
+            <div class="stat-sub" id="stat-balance-sub">Credits - Debits</div>
+          </div>
+          <div class="card card-stat">
+            <div class="stat-label">Today's Spend</div>
+            <div class="stat-value" id="stat-today">₹0</div>
+            <div class="stat-sub" id="stat-today-sub">of ₹500 limit</div>
+            <div class="stat-bar"><div class="stat-bar-fill" id="stat-today-bar" style="width:0%"></div></div>
+          </div>
+          <div class="card card-stat">
+            <div class="stat-label">This Month</div>
+            <div class="stat-value" id="stat-month">₹0</div>
+            <div class="stat-sub">Total spending</div>
+          </div>
+          <div class="card card-stat">
+            <div class="stat-label">Total Income</div>
+            <div class="stat-value credit-value" id="stat-income">₹0</div>
+            <div class="stat-sub">All credits</div>
+          </div>
+        </div>
+
+        <!-- Alert Banner -->
+        <div class="alert-banner hidden" id="alert-banner">
+          <span class="alert-icon" id="alert-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+          <div class="alert-body">
+            <strong id="alert-title">Budget Warning</strong>
+            <p id="alert-msg">You've exceeded your daily budget.</p>
+          </div>
+          <button onclick="dismissAlert()" class="alert-dismiss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Daily Expenses</h3>
+              <div class="chart-period-tabs">
+                <button class="tab-btn active" onclick="setChartPeriod(7, this)">7D</button>
+                <button class="tab-btn" onclick="setChartPeriod(14, this)">14D</button>
+                <button class="tab-btn" onclick="setChartPeriod(30, this)">30D</button>
+              </div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="expenseChart"></canvas>
+            </div>
+          </div>
+          <div class="card chart-card chart-card-sm">
+            <div class="card-header"><h3>By Category</h3></div>
+            <div class="chart-wrap chart-wrap-sm">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Row: Suggestions + Recent Transactions -->
+        <div class="dash-bottom-row">
+          <div class="card suggestions-card">
+            <div class="card-header">
+              <h3>💡 Smart Insights</h3>
+              <span class="badge-tag" id="suggestion-status-tag">On Track</span>
+            </div>
+            <div class="suggestions-list" id="suggestions-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>Recent Transactions</h3>
+              <button class="btn btn-ghost btn-sm" onclick="navigate('transactions')">View all</button>
+            </div>
+            <div class="transactions-list" id="transactions-list">
+              <p class="empty-state">No transactions yet. <a href="#" onclick="navigate('expenses')">Add your first one →</a></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── TRANSACTIONS ── -->
+      <section class="view" id="view-transactions">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Transactions</h2>
+            <p class="page-subtitle">All your income and expenses</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="navigate('expenses')">+ Add New</button>
+        </div>
+
+        <!-- Filters Bar -->
+        <div class="card filters-bar">
+          <div class="filter-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="txn-search" placeholder="Search transactions…" oninput="filterTransactions()" />
+          </div>
+          <div class="filter-controls">
+            <select id="txn-filter-type" onchange="filterTransactions()">
+              <option value="">All types</option>
+              <option value="debit">Debit</option>
+              <option value="credit">Credit</option>
+            </select>
+            <select id="txn-filter-cat" onchange="filterTransactions()">
+              <option value="">All categories</option>
+              <option value="Food &amp; Dining">Food &amp; Dining</option>
+              <option value="Transport">Transport</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Health">Health</option>
+              <option value="Bills">Bills</option>
+              <option value="Education">Education</option>
+              <option value="Income">Income</option>
+              <option value="Other">Other</option>
+            </select>
+            <select id="txn-filter-period" onchange="filterTransactions()">
+              <option value="30">Last 30 days</option>
+              <option value="7">Last 7 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="all">All time</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="clearTxnFilters()">Clear</button>
+          </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="card txn-table-card">
+          <div id="txn-summary-bar" class="txn-summary-bar"></div>
+          <div class="txn-full-list" id="txn-full-list">
+            <p class="empty-state">No transactions found.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── ADD EXPENSE ── -->
+      <section class="view" id="view-expenses">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Add Transaction</h2>
+            <p class="page-subtitle">Log your income or expense</p>
+          </div>
+        </div>
+
+        <div class="two-col-layout">
+          <div class="card form-card">
+            <form id="expense-form" novalidate>
+              <!-- Type Toggle -->
+              <div class="form-group">
+                <label>Transaction Type</label>
+                <div class="type-toggle">
+                  <button type="button" class="type-btn active" id="type-debit" data-type="debit" onclick="selectType(this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+                    Debit / Expense
+                  </button>
+                  <button type="button" class="type-btn" id="type-credit" data-type="credit" onclick="selectType(this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                    Credit / Income
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="exp-amount">Amount (₹)</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">₹</span>
+                  <input type="number" id="exp-amount" placeholder="0.00" min="1" step="0.01" required />
+                </div>
+                <span class="field-error" id="exp-amount-err"></span>
+              </div>
+              <div class="form-group">
+                <label>Category</label>
+                <div class="category-grid" id="category-select">
+                  <button type="button" class="cat-btn active" data-cat="Food &amp; Dining" onclick="selectCat(this)">🍽️ Food</button>
+                  <button type="button" class="cat-btn" data-cat="Transport" onclick="selectCat(this)">🚌 Transport</button>
+                  <button type="button" class="cat-btn" data-cat="Shopping" onclick="selectCat(this)">🛍️ Shopping</button>
+                  <button type="button" class="cat-btn" data-cat="Entertainment" onclick="selectCat(this)">🎬 Entertainment</button>
+                  <button type="button" class="cat-btn" data-cat="Health" onclick="selectCat(this)">💊 Health</button>
+                  <button type="button" class="cat-btn" data-cat="Bills" onclick="selectCat(this)">📄 Bills</button>
+                  <button type="button" class="cat-btn" data-cat="Education" onclick="selectCat(this)">📚 Education</button>
+                  <button type="button" class="cat-btn" data-cat="Income" onclick="selectCat(this)">💰 Income</button>
+                  <button type="button" class="cat-btn" data-cat="Other" onclick="selectCat(this)">📦 Other</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="exp-note">Note (optional)</label>
+                <input type="text" id="exp-note" placeholder="e.g. Lunch at office canteen" />
+              </div>
+              <div class="form-group">
+                <label for="exp-date">Date</label>
+                <input type="date" id="exp-date" />
+              </div>
+              <button type="submit" class="btn btn-primary btn-full">Save Transaction</button>
+            </form>
+          </div>
+
+          <div class="side-panel">
+            <div class="card budget-quick">
+              <h4>Today's Budget Status</h4>
+              <div class="budget-ring-wrap">
+                <canvas id="budgetRing" width="160" height="160"></canvas>
+                <div class="budget-ring-label">
+                  <span id="ring-pct">0%</span>
+                  <small>used</small>
+                </div>
+              </div>
+              <div class="budget-summary">
+                <div class="bsum-row"><span>Spent</span><span id="bsum-spent">₹0</span></div>
+                <div class="bsum-row"><span>Remaining</span><span id="bsum-rem" class="green">₹500</span></div>
+                <div class="bsum-row"><span>Budget</span><span id="bsum-limit">₹500</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <h4 style="margin-bottom:.75rem">💡 Quick Tip</h4>
+              <p id="quick-tip-text" style="font-size:.85rem;color:var(--text-light);line-height:1.6"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── ANALYTICS ── -->
+      <section class="view" id="view-analytics">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Analytics</h2>
+            <p class="page-subtitle">Spending patterns &amp; insights</p>
+          </div>
+          <select id="analytics-period" onchange="renderAnalytics()" class="period-select">
+            <option value="30">Last 30 days</option>
+            <option value="7">Last 7 days</option>
+            <option value="90">Last 3 months</option>
+            <option value="all">All time</option>
+          </select>
+        </div>
+
+        <!-- Analytics Summary Row -->
+        <div class="analytics-summary-row" id="analytics-summary-row"></div>
+
+        <!-- Charts Row -->
+        <div class="analytics-charts-row">
+          <div class="card chart-card">
+            <div class="card-header"><h3>Monthly Spending Trend</h3></div>
+            <div class="chart-wrap"><canvas id="monthlyTrendChart"></canvas></div>
+          </div>
+          <div class="card chart-card chart-card-sm">
+            <div class="card-header"><h3>Category Breakdown</h3></div>
+            <div class="chart-wrap chart-wrap-sm"><canvas id="analyticsCatChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Smart Analysis -->
+        <div class="card smart-analysis-card">
+          <div class="card-header">
+            <h3>🧠 Smart Analysis</h3>
+            <span class="badge-tag" id="analysis-health-tag">Analysing…</span>
+          </div>
+          <div class="analysis-grid" id="analysis-grid"></div>
+        </div>
+
+        <!-- Category Details Table -->
+        <div class="card">
+          <div class="card-header"><h3>Category Breakdown</h3></div>
+          <div class="cat-breakdown-list" id="cat-breakdown-list"></div>
+        </div>
+      </section>
+
+      <!-- ── BUDGET ── -->
+      <section class="view" id="view-budget">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Budget Setup</h2>
+            <p class="page-subtitle">Set your daily spending limits</p>
+          </div>
+        </div>
+        <div class="two-col-layout">
+          <div class="card form-card">
+            <form id="budget-form" novalidate>
+              <div class="form-group">
+                <label for="budget-daily">Daily Spending Limit (₹)</label>
+                <div class="input-wrap">
+                  <span class="input-prefix">₹</span>
+                  <input type="number" id="budget-daily" placeholder="500" min="1" required />
+                </div>
+                <span class="field-hint">This is your total daily cap across all categories.</span>
+              </div>
+              <div class="section-label">Category Limits (optional)</div>
+              <div id="category-budgets">
+                <div class="cat-budget-row"><span>Food &amp; Dining</span><div class="input-wrap"><span class="input-prefix">₹</span><input type="number" id="cb-food" placeholder="200" min="0" /></div></div>
+                <div class="cat-budget-row"><span>Transport</span><div class="input-wrap"><span class="input-prefix">₹</span><input type="number" id="cb-transport" placeholder="100" min="0" /></div></div>
+                <div class="cat-budget-row"><span>Shopping</span><div class="input-wrap"><span class="input-prefix">₹</span><input type="number" id="cb-shopping" placeholder="100" min="0" /></div></div>
+                <div class="cat-budget-row"><span>Entertainment</span><div class="input-wrap"><span class="input-prefix">₹</span><input type="number" id="cb-entertainment" placeholder="50" min="0" /></div></div>
+                <div class="cat-budget-row"><span>Health</span><div class="input-wrap"><span class="input-prefix">₹</span><input type="number" id="cb-health" placeholder="50" min="0" /></div></div>
+                <div class="cat-budget-row"><span>Bills</span><div class="input-wrap"><span class="input-prefix">₹</span><input type="number" id="cb-bills" placeholder="0" min="0" /></div></div>
+                <div class="cat-budget-row"><span>Education</span><div class="input-wrap"><span class="input-prefix">₹</span><input type="number" id="cb-edu" placeholder="0" min="0" /></div></div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-full">Save Budget</button>
+            </form>
+          </div>
+          <div class="side-panel">
+            <div class="card">
+              <h4>💰 Budget Tips</h4>
+              <ul class="tips-list">
+                <li>The <strong>50/30/20 rule</strong>: 50% needs, 30% wants, 20% savings</li>
+                <li>Track every expense, no matter how small</li>
+                <li>Review your budget weekly and adjust as needed</li>
+                <li>Pay yourself first — set savings aside on payday</li>
+                <li>Meal prepping can save ₹1,500–₹3,000/month</li>
+              </ul>
+            </div>
+            <div class="card" id="budget-progress-card">
+              <h4>Today's Progress</h4>
+              <div id="budget-progress-list" style="margin-top:.75rem"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── BADGES ── -->
+      <section class="view" id="view-badges">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Your Badges</h2>
+            <p class="page-subtitle">Rewards for smart spending habits</p>
+          </div>
+        </div>
+        <div class="badges-grid" id="badges-grid"></div>
+        <div class="card" style="margin-top:1.5rem">
+          <div class="card-header"><h3>Spending History</h3></div>
+          <div class="history-table-wrap">
+            <table class="history-table" id="history-table">
+              <thead>
+                <tr><th>Date</th><th>Total Spent</th><th>Budget</th><th>Status</th></tr>
+              </thead>
+              <tbody id="history-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── PROFILE ── -->
+      <section class="view" id="view-profile">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Profile</h2>
+            <p class="page-subtitle">Manage your account details</p>
+          </div>
+        </div>
+        <div class="two-col-layout">
+          <div class="card form-card">
+            <div class="profile-avatar-section">
+              <div class="avatar-lg" id="profile-avatar-display">P</div>
+              <div>
+                <p class="avatar-name" id="profile-display-name">Priya Sharma</p>
+                <p class="avatar-email" id="profile-display-email">priya@example.com</p>
+                <span class="member-since">Member since <span id="member-since-val">March 2026</span></span>
+              </div>
+            </div>
+            <form id="profile-form" novalidate>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="profile-fname">First name</label>
+                  <input type="text" id="profile-fname" placeholder="Priya" />
+                </div>
+                <div class="form-group">
+                  <label for="profile-lname">Last name</label>
+                  <input type="text" id="profile-lname" placeholder="Sharma" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="profile-email">Email address</label>
+                <input type="email" id="profile-email" placeholder="you@example.com" />
+              </div>
+              <div class="form-group">
+                <label for="profile-phone">Phone number</label>
+                <input type="tel" id="profile-phone" placeholder="+91 98765 43210" />
+              </div>
+              <div class="form-group">
+                <label for="profile-limit">Daily spending limit (₹)</label>
+                <div class="input-wrap"><span class="input-prefix">₹</span><input type="number" id="profile-limit" placeholder="500" min="1" /></div>
+              </div>
+              <!-- SMS Toggle -->
+              <div class="sms-toggle-section">
+                <div class="sms-toggle-info">
+                  <div class="sms-toggle-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Auto-read SMS Notifications
+                  </div>
+                  <p class="sms-toggle-desc">Automatically detect transactions from bank SMS messages</p>
+                </div>
+                <div id="sms-toggle" class="toggle-switch" onclick="toggleSmsPermission()"></div>
+              </div>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+          </div>
+          <div class="side-panel">
+            <div class="card profile-stats-card">
+              <h4>Your Stats</h4>
+              <div class="profile-stat-row"><span>Total Transactions</span><strong id="ps-total-exp">0</strong></div>
+              <div class="profile-stat-row"><span>Days on Budget</span><strong id="ps-on-budget" class="green">0</strong></div>
+              <div class="profile-stat-row"><span>Days Over Budget</span><strong id="ps-over-budget" class="red">0</strong></div>
+              <div class="profile-stat-row"><span>Best Streak</span><strong id="ps-streak">0 days</strong></div>
+              <div class="profile-stat-row"><span>Badges Earned</span><strong id="ps-badges">0</strong></div>
+              <div class="profile-stat-row"><span>Total Income</span><strong id="ps-income" class="green">₹0</strong></div>
+            </div>
+            <div class="card" style="margin-top:1rem">
+              <h4>Danger Zone</h4>
+              <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;margin-top:.5rem">These actions are permanent.</p>
+              <button class="btn btn-danger btn-sm" onclick="clearAllData()">Clear All Data</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div><!-- /app-shell -->
+
+  <!-- ════════ SMS Detection Modal ════════ -->
+  <div class="sms-modal-overlay" id="sms-modal">
+    <div class="card sms-modal-card">
+      <div class="sms-modal-header">
+        <div class="sms-modal-title-row">
+          <div class="sms-pulse-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div>
+            <h3 class="sms-modal-title">Transaction Detected!</h3>
+            <p class="sms-modal-subtitle">Review and confirm to save</p>
+          </div>
+        </div>
+        <button class="sms-close-btn" onclick="closeSmsModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="sms-raw-msg-box">
+        <div class="sms-raw-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Original SMS
+        </div>
+        <p id="sms-modal-msg"></p>
+      </div>
+
+      <form id="sms-modal-form" novalidate onsubmit="saveSmsModalExpense(event)">
+        <!-- Type row -->
+        <div class="sms-detected-row">
+          <div class="sms-detected-item">
+            <span class="sms-detected-label">Type</span>
+            <div id="sms-modal-type-display" class="type-badge debit">Debit</div>
+          </div>
+          <div class="sms-detected-item">
+            <span class="sms-detected-label">Amount</span>
+            <div class="input-wrap" style="width:140px">
+              <span class="input-prefix">₹</span>
+              <input type="number" id="sms-modal-amount" required step="0.01" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:.75rem">
+          <label>Category</label>
+          <div class="cat-modal-grid">
+            <button type="button" class="cat-btn active" data-cat="Food &amp; Dining" onclick="setSmsModalCat(this)">🍽️ Food</button>
+            <button type="button" class="cat-btn" data-cat="Transport" onclick="setSmsModalCat(this)">🚌 Transport</button>
+            <button type="button" class="cat-btn" data-cat="Shopping" onclick="setSmsModalCat(this)">🛍️ Shopping</button>
+            <button type="button" class="cat-btn" data-cat="Entertainment" onclick="setSmsModalCat(this)">🎬 Entmt.</button>
+            <button type="button" class="cat-btn" data-cat="Health" onclick="setSmsModalCat(this)">💊 Health</button>
+            <button type="button" class="cat-btn" data-cat="Bills" onclick="setSmsModalCat(this)">📄 Bills</button>
+            <button type="button" class="cat-btn" data-cat="Income" onclick="setSmsModalCat(this)">💰 Income</button>
+            <button type="button" class="cat-btn" data-cat="Other" onclick="setSmsModalCat(this)">📦 Other</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="sms-modal-note-input">Note / Merchant</label>
+          <input type="text" id="sms-modal-note-input" placeholder="e.g. Swiggy order" />
+        </div>
+
+        <input type="hidden" id="sms-modal-raw-cat" value="Other" />
+        <input type="hidden" id="sms-modal-txn-type" value="debit" />
+
+        <div class="sms-modal-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeSmsModal()">Dismiss</button>
+          <button type="submit" class="btn btn-primary">Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════ Edit Transaction Modal ════════ -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="card modal-card">
+      <div class="modal-header">
+        <h3>Edit Transaction</h3>
+        <button class="sms-close-btn" onclick="closeEditModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <form id="edit-form" novalidate onsubmit="saveEditedTransaction(event)">
+        <input type="hidden" id="edit-txn-id" />
+        <div class="form-group">
+          <label>Transaction Type</label>
+          <div class="type-toggle">
+            <button type="button" class="type-btn active" id="edit-type-debit" data-type="debit" onclick="selectEditType(this)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+              Debit
+            </button>
+            <button type="button" class="type-btn" id="edit-type-credit" data-type="credit" onclick="selectEditType(this)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+              Credit
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="edit-amount">Amount (₹)</label>
+          <div class="input-wrap"><span class="input-prefix">₹</span><input type="number" id="edit-amount" min="1" step="0.01" required /></div>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <div class="category-grid" id="edit-category-select">
+            <button type="button" class="cat-btn" data-cat="Food &amp; Dining" onclick="selectEditCat(this)">🍽️ Food</button>
+            <button type="button" class="cat-btn" data-cat="Transport" onclick="selectEditCat(this)">🚌 Transport</button>
+            <button type="button" class="cat-btn" data-cat="Shopping" onclick="selectEditCat(this)">🛍️ Shopping</button>
+            <button type="button" class="cat-btn" data-cat="Entertainment" onclick="selectEditCat(this)">🎬 Entertainment</button>
+            <button type="button" class="cat-btn" data-cat="Health" onclick="selectEditCat(this)">💊 Health</button>
+            <button type="button" class="cat-btn" data-cat="Bills" onclick="selectEditCat(this)">📄 Bills</button>
+            <button type="button" class="cat-btn" data-cat="Education" onclick="selectEditCat(this)">📚 Education</button>
+            <button type="button" class="cat-btn" data-cat="Income" onclick="selectEditCat(this)">💰 Income</button>
+            <button type="button" class="cat-btn" data-cat="Other" onclick="selectEditCat(this)">📦 Other</button>
+          </div>
+          <input type="hidden" id="edit-category" value="Other" />
+        </div>
+        <div class="form-group">
+          <label for="edit-note">Note (optional)</label>
+          <input type="text" id="edit-note" placeholder="e.g. Lunch" />
+        </div>
+        <div class="form-group">
+          <label for="edit-date">Date</label>
+          <input type="date" id="edit-date" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════ SMS Permission Modal (first-time) ════════ -->
+  <div class="modal-overlay" id="sms-permission-modal">
+    <div class="card sms-perm-card">
+      <div class="sms-perm-icon">📱</div>
+      <h3>Enable SMS Auto-Detection?</h3>
+      <p>Smart Spend can automatically detect transactions from your bank SMS messages and add them to your tracker.</p>
+      <ul class="sms-perm-list">
+        <li><span class="feat-check green-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Automatic transaction detection</li>
+        <li><span class="feat-check green-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>You review &amp; confirm each transaction</li>
+        <li><span class="feat-check green-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Data stays on your device</li>
+        <li><span class="feat-check green-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Can be disabled anytime in Profile</li>
+      </ul>
+      <div class="sms-perm-actions">
+        <button class="btn btn-ghost" onclick="denySmsPerm()">Not Now</button>
+        <button class="btn btn-primary" onclick="grantSmsPerm()">Enable SMS Detection</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
