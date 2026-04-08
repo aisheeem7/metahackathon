@@ -1,4 +1,4 @@
-# 💰 Personal Expense Optimizer
+# Smart Save - A Personal Expense Optimizer
 
 A real-world task environment and agentic solution for optimizing personal finances via simulated transaction management. Built for the Hackathon with OpenEnv compliance.
 
@@ -24,8 +24,6 @@ The **Personal Expense Optimizer** is an interactive environment where an AI age
     - `env/tasks.py`: Standardized tasks and graders (Easy, Medium, Hard).
 
 ---
-
-## 🚀 Getting Started
 
 ### Prerequisites
 - Python 3.10+
@@ -54,8 +52,6 @@ docker run -p 7860:7860 expense-optimizer
 ```
 
 ---
-
-## 📊 Evaluation & Inference
 
 The project includes a standardized `inference.py` script for baseline reproduction and scoring.
 
