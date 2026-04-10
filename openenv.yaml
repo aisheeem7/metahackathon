@@ -5,6 +5,12 @@ description: "Real-world task: Personal expense optimization using SMS transacti
 entry_point: app.py:app
 type: env
 
+endpoints:
+  reset: POST /api/env/reset
+  step:  POST /api/env/step
+  state: GET  /api/env/state
+  grade: POST /api/tasks/{task_id}/grade
+
 action_space:
   type: categorical
   actions: 
@@ -23,6 +29,7 @@ observation_space:
     recent_transactions: "list[Transaction]"
     monthly_income: "float"
     savings_goal_percentage: "float"
+    pending_transaction: "Transaction | null"
 
 tasks:
   - id: budget_adherence_easy

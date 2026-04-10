@@ -1,381 +1,187 @@
 """
-Personal Expense Optimization Environment - OpenEnv compliant.
-
-Real-world task: Agent must allocate monthly budget across categories
-and make smart spending decisions to meet savings goals while staying
-within budget constraints.
-
-Simulates realistic transaction patterns from SMS data.
+Core logic for the Personal Expense Optimizer environment.
+Simulates a 30-day monthly budget cycle with SMS-style transactions.
 """
-
 import random
-from typing import Dict, List, Tuple, Optional
-from datetime import datetime, timedelta
+from copy import deepcopy
+from typing import Dict, Tuple, List
 
-from .models import (
-    Action, ActionType, Observation, Reward, Transaction,
-    TaskInfo, StepOutput, ResetOutput
-)
+from env.models import Action, Observation, Reward, Transaction
 
+MONTHLY_INCOME = 50000.0
+SAVINGS_GOAL = 0.20  # 20% default savings goal
+CATEGORIES = ["Food", "Transport", "Entertainment", "Bills", "Shopping", "Health"]
 
-# Realistic SMS transaction patterns by category
-TRANSACTION_PATTERNS = {
-    "Food & Dining": [
-        ("Swiggy", [250, 300, 350, 400], 0.4),
-        ("Starbucks", [150, 200], 0.3),
-        ("ZomatoGold", [500], 0.2),
-        ("DMart Groceries", [1000, 1200, 1500], 0.3),
-        ("Restaurant", [800, 1000, 1200], 0.15),
-    ],
-    "Transport": [
-        ("Uber", [120, 150, 200], 0.35),
-        ("Ola", [100, 150, 180], 0.3),
-        ("Metro Recharge", [100, 200], 0.2),
-        ("Petrol/Fuel", [1000, 1200, 1500], 0.1),
-        ("Train Ticket", [500, 800], 0.05),
-    ],
-    "Shopping": [
-        ("Amazon", [500, 1000, 2000, 3000], 0.2),
-        ("Flipkart", [300, 800, 1500], 0.15),
-        ("Myntra", [1000, 1500, 2000], 0.15),
-        ("Local Shops", [200, 500], 0.2),
-    ],
-    "Health": [
-        ("Apollo Pharmacy", [300, 500, 800], 0.2),
-        ("Gym Membership", [500, 1000], 0.1),
-        ("Doctor", [500, 1500, 2000], 0.08),
-        ("Health Insurance", [1000, 2000, 3000], 0.05),
-    ],
-    "Bills": [
-        ("Electricity", [800, 1200, 1500], 0.15),
-        ("Water", [200, 300], 0.15),
-        ("Internet", [500, 700], 0.15),
-        ("Mobile Bill", [200, 300, 500], 0.15),
-        ("Netflix/Spotify", [100, 200, 300], 0.1),
-        ("Insurance", [1000, 1500, 2000], 0.1),
-    ]
+# Daily transaction pool (realistic INR amounts)
+TRANSACTION_POOL = [
+    ("Food",          200,  800,  "Grocery / restaurant"),
+    ("Transport",     50,   500,  "Cab / fuel"),
+    ("Entertainment", 300,  1500, "OTT / outing"),
+    ("Bills",         500,  3000, "Electricity / internet"),
+    ("Shopping",      500,  3000, "Clothes / gadgets"),
+    ("Health",        200,  1500, "Pharmacy / clinic"),
+]
+
+DEFAULT_BUDGETS: Dict[str, float] = {
+    "Food":          10000.0,
+    "Transport":      5000.0,
+    "Entertainment":  5000.0,
+    "Bills":          8000.0,
+    "Shopping":       7000.0,
+    "Health":         5000.0,
 }
 
-DEFAULT_INCOME = 50000  # ₹50k monthly income
+
+def _make_transaction(day: int, txn_id: int) -> Transaction:
+    cat, lo, hi, desc = random.choice(TRANSACTION_POOL)
+    return Transaction(
+        id=f"txn_{day}_{txn_id}",
+        day=day,
+        category=cat,
+        amount=round(random.uniform(lo, hi), 2),
+        description=desc,
+    )
 
 
-class PersonalExpenseOptimizer:
-    """
-    OpenEnv-compliant environment for personal expense optimization.
-    
-    Task: Allocate monthly ₹50k budget across 5 categories and make
-    spending decisions to meet savings goals (20% by default).
-    
-    Episodes run for 30 days (1 month). Each day, agent receives
-    1-3 realistic transactions and must decide whether to spend,
-    defer, or adjust budget allocations.
-    """
+class FinanceEnv:
+    """OpenEnv-compliant 30-day personal expense simulation."""
 
-    def __init__(self, monthly_income: float = DEFAULT_INCOME, seed: int = None):
-        self.monthly_income = monthly_income
-        self.monthly_budget = monthly_income
-        self.categories = ["Food & Dining", "Transport", "Shopping", "Health", "Bills"]
-        
-        if seed is not None:
-            random.seed(seed)
-        
-        # Episode state
-        self.day = 1
-        self.category_budgets: Dict[str, float] = {}
-        self.category_spent: Dict[str, float] = {}
-        self.total_spent = 0.0
-        self.current_savings = 0.0
-        self.savings_goal_percentage = 0.2  # 20% target savings
-        
-        # Decision tracking
-        self.days_on_budget = 0
-        self.overspend_count = 0
-        self.deferred_expenses: List[Tuple[str, float, int]] = []
-        self.transaction_history: List[Transaction] = []
-        self.decision_history: List[Dict] = []
-        
-        # Current transaction
-        self.pending_transaction: Optional[Transaction] = None
-        self.transaction_processed = False
+    def __init__(self, seed: int = 42):
+        self.seed = seed
+        self._rng = random.Random(seed)
+        self.reset()
 
-    def reset(self, task: Optional[TaskInfo] = None) -> ResetOutput:
-        """
-        Reset environment to start of month.
-        
-        Args:
-            task: Optional task configuration
-            
-        Returns:
-            ResetOutput with initial observation and metadata
-        """
-        self.day = 1
-        self.total_spent = 0.0
-        self.current_savings = self.monthly_budget
-        self.days_on_budget = 0
-        self.overspend_count = 0
-        self.deferred_expenses = []
-        self.transaction_history = []
-        self.decision_history = []
-        self.transaction_processed = False
-        
-        # Initialize budget allocations (default: equal split)
-        for cat in self.categories:
-            self.category_budgets[cat] = self.monthly_budget / len(self.categories)
-            self.category_spent[cat] = 0.0
-        
-        obs = self._get_observation()
-        return ResetOutput(
-            observation=obs,
-            info={"task": task.dict() if task else None, "episode_start": datetime.now().isoformat()}
-        )
+    # ------------------------------------------------------------------
+    # OpenEnv interface
+    # ------------------------------------------------------------------
 
-    def step(self, action: Action) -> StepOutput:
-        """
-        Execute one step of the environment.
-        
-        Args:
-            action: Agent's decision
-            
-        Returns:
-            StepOutput with observation, reward, done, and info
-        """
-        info = {}
-        
-        # Process agent action
-        if action.action_type == ActionType.ALLOCATE_BUDGET:
-            self._handle_allocate_budget(action)
-        elif action.action_type == ActionType.ADJUST_CATEGORY:
-            self._handle_adjust_category(action)
-        elif action.action_type == ActionType.SET_SAVINGS_GOAL:
-            self._handle_set_savings_goal(action)
-        elif action.action_type == ActionType.DEFER_EXPENSE:
-            self._handle_defer_expense(action)
-        
-        # Generate transaction if needed
-        if self.pending_transaction is None:
-            self.pending_transaction = self._generate_transaction()
-            self.transaction_processed = False
-        
-        # Check if transaction was processed (implicitly by adjust)
-        # If still pending, apply it with minimum cost decision
-        if not self.transaction_processed and self.pending_transaction:
-            self._apply_transaction(self.pending_transaction, deferred=False)
-        
-        # Calculate reward
-        reward = self._calculate_reward()
-        
-        # Update day counter
+    def reset(self) -> Observation:
+        random.seed(self.seed)
+        self.day: int = 1
+        self.balance: float = MONTHLY_INCOME
+        self.monthly_income: float = MONTHLY_INCOME
+        self.savings_goal: float = SAVINGS_GOAL
+        self.category_budgets: Dict[str, float] = deepcopy(DEFAULT_BUDGETS)
+        self.category_spent: Dict[str, float] = {c: 0.0 for c in CATEGORIES}
+        self.transactions: List[Transaction] = []
+        self.deferred: List[Transaction] = []
+        self.done: bool = False
+        self._step_count: int = 0
+
+        # Pre-generate all 30 days of transactions for determinism
+        self._all_transactions: List[Transaction] = []
+        for d in range(1, 31):
+            count = random.randint(1, 3)
+            for i in range(count):
+                self._all_transactions.append(_make_transaction(d, i))
+
+        self._pending_idx: int = 0
+        return self._observe()
+
+    def step(self, action: Action) -> Tuple[Observation, Reward, bool]:
+        if self.done:
+            return self._observe(), Reward(), True
+
+        self._apply_action(action)
+        self._process_day_transactions()
+
         self.day += 1
-        done = self.day > 30
-        
-        # Check budget adherence
-        if self._check_within_budget():
-            self.days_on_budget += 1
-        
-        if done:
-            # Final savings calculation
-            self.current_savings = self.monthly_budget - self.total_spent
-            info["final_savings"] = self.current_savings
-            info["savings_percentage"] = (self.current_savings / self.monthly_budget) * 100
-            info["task_score"] = self._grade_episode()
-        
-        obs = self._get_observation()
-        return StepOutput(
-            observation=obs,
-            reward=reward,
-            done=done,
-            info=info
+        self._step_count += 1
+
+        if self.day > 30:
+            self.done = True
+
+        reward = self._compute_reward()
+        return self._observe(), reward, self.done
+
+    def state(self) -> dict:
+        return self._observe().model_dump()
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _apply_action(self, action: Action) -> None:
+        at = action.action_type
+        cat = action.category
+        amt = action.amount or 0.0
+
+        if at == "allocate_budget" and cat in self.category_budgets:
+            self.category_budgets[cat] = max(0.0, amt)
+
+        elif at == "adjust_category" and cat in self.category_budgets:
+            self.category_budgets[cat] = max(0.0, self.category_budgets[cat] + amt)
+
+        elif at == "set_savings_goal":
+            self.savings_goal = max(0.0, min(1.0, amt / 100.0 if amt > 1 else amt))
+
+        elif at == "defer_expense":
+            # Defer next pending transaction for this category
+            pending = self._get_pending_transactions()
+            for txn in pending:
+                if cat and txn.category == cat:
+                    txn.deferred = True
+                    days = max(1, action.defer_days or 3)
+                    txn.day = min(30, txn.day + days)
+                    break
+
+    def _process_day_transactions(self) -> None:
+        today_txns = [
+            t for t in self._all_transactions
+            if t.day == self.day and not t.deferred
+        ]
+        for txn in today_txns:
+            self.balance -= txn.amount
+            self.category_spent[txn.category] = (
+                self.category_spent.get(txn.category, 0.0) + txn.amount
+            )
+            self.transactions.append(txn)
+
+    def _get_pending_transactions(self) -> List[Transaction]:
+        return [t for t in self._all_transactions if t.day >= self.day and not t.deferred]
+
+    def _compute_reward(self) -> Reward:
+        # Budget adherence: fraction of categories within budget
+        within = sum(
+            1 for c in CATEGORIES
+            if self.category_spent.get(c, 0) <= self.category_budgets.get(c, 0)
+        )
+        budget_adherence = within / len(CATEGORIES)
+
+        # Savings progress: how close to savings goal
+        spent_total = sum(self.category_spent.values())
+        actual_savings = (self.monthly_income - spent_total) / self.monthly_income
+        savings_progress = min(1.0, max(0.0, actual_savings / self.savings_goal)) if self.savings_goal > 0 else 0.0
+
+        # Category efficiency: inverse of overspend ratio
+        overspend_fracs = []
+        for c in CATEGORIES:
+            budget = self.category_budgets.get(c, 1.0) or 1.0
+            spent = self.category_spent.get(c, 0.0)
+            overspend_fracs.append(max(0.0, (spent - budget) / budget))
+        category_efficiency = max(0.0, 1.0 - sum(overspend_fracs) / len(CATEGORIES))
+
+        total = round(
+            0.4 * budget_adherence + 0.4 * savings_progress + 0.2 * category_efficiency, 4
+        )
+        return Reward(
+            budget_adherence=round(budget_adherence, 4),
+            savings_progress=round(savings_progress, 4),
+            category_efficiency=round(category_efficiency, 4),
+            total=total,
         )
 
-    def state(self) -> Dict:
-        """Get current state as dictionary."""
-        return {
-            "day": self.day,
-            "total_budget": self.monthly_budget,
-            "total_spent": self.total_spent,
-            "current_savings": self.monthly_budget - self.total_spent,
-            "category_budgets": self.category_budgets.copy(),
-            "category_spent": self.category_spent.copy(),
-            "savings_goal_percentage": self.savings_goal_percentage,
-            "days_on_budget": self.days_on_budget,
-            "overspend_count": self.overspend_count,
-        }
-
-    # Private helper methods
-    
-    def _get_observation(self) -> Observation:
-        """Construct typed observation from current state."""
-        category_remaining = {
-            cat: max(0, self.category_budgets[cat] - self.category_spent[cat])
-            for cat in self.categories
-        }
-        
+    def _observe(self) -> Observation:
+        recent = self.transactions[-5:] if self.transactions else []
+        pending = self._get_pending_transactions()
+        pending_txn = pending[0] if pending else None
         return Observation(
             day=self.day,
-            total_balance=max(0, self.monthly_budget - self.total_spent),
-            category_budgets=self.category_budgets.copy(),
-            category_spent=self.category_spent.copy(),
-            category_remaining=category_remaining,
-            recent_transactions=self.transaction_history[-5:],
-            pending_transaction=self.pending_transaction,
+            total_balance=round(self.balance, 2),
+            category_budgets=dict(self.category_budgets),
+            category_spent=dict(self.category_spent),
+            recent_transactions=recent,
             monthly_income=self.monthly_income,
-            savings_goal_percentage=self.savings_goal_percentage,
-            current_savings=self.monthly_budget - self.total_spent,
-            projected_savings=max(0, self.monthly_budget - self.total_spent),
-            days_on_budget=self.days_on_budget,
-            overspend_count=self.overspend_count,
+            savings_goal_percentage=self.savings_goal,
+            pending_transaction=pending_txn,
         )
-
-    def _generate_transaction(self) -> Transaction:
-        """Generate realistic transaction from SMS patterns."""
-        category = random.choice(self.categories)
-        patterns = TRANSACTION_PATTERNS[category]
-        
-        # Pick a merchant and amount
-        merchant, amounts, frequency = random.choices(patterns, k=1)[0]
-        amount = random.choice(amounts)
-        
-        # Discretionary transactions: food, shopping, entertainment
-        is_discretionary = category in ["Food & Dining", "Shopping"]
-        
-        transaction = Transaction(
-            category=category,
-            amount=amount,
-            date=self.day,
-            description=f"{merchant} - ₹{amount}",
-            is_discretionary=is_discretionary
-        )
-        return transaction
-
-    def _apply_transaction(self, txn: Transaction, deferred: bool = False) -> None:
-        """Apply transaction to spending."""
-        if not deferred:
-            self.category_spent[txn.category] += txn.amount
-            self.total_spent += txn.amount
-            self.transaction_history.append(txn)
-        else:
-            # Deferred: add cost and remember for later
-            self.deferred_expenses.append((txn.category, txn.amount, self.day))
-        
-        self.pending_transaction = None
-        self.transaction_processed = True
-
-    def _handle_allocate_budget(self, action: Action) -> None:
-        """Handle ALLOCATE_BUDGET action."""
-        if action.amount is None:
-            return
-        
-        # Distribute budget among all categories based on percentages
-        total = sum(self.category_budgets.values())
-        for cat in self.categories:
-            self.category_budgets[cat] = (self.category_budgets[cat] / total) * action.amount
-
-    def _handle_adjust_category(self, action: Action) -> None:
-        """Handle ADJUST_CATEGORY action."""
-        if action.category not in self.categories or action.amount is None:
-            return
-        
-        self.category_budgets[action.category] = action.amount
-        
-        # If there's a pending transaction in this category, this implicitly approves it
-        if self.pending_transaction and self.pending_transaction.category == action.category:
-            if self.category_spent[action.category] + self.pending_transaction.amount <= action.amount:
-                self._apply_transaction(self.pending_transaction, deferred=False)
-
-    def _handle_set_savings_goal(self, action: Action) -> None:
-        """Handle SET_SAVINGS_GOAL action."""
-        if action.amount is None:
-            return
-        
-        # Clamp savings goal to 0-50%
-        self.savings_goal_percentage = max(0, min(0.5, action.amount / 100))
-
-    def _handle_defer_expense(self, action: Action) -> None:
-        """Handle DEFER_EXPENSE action."""
-        if self.pending_transaction and self.pending_transaction.is_discretionary:
-            self._apply_transaction(self.pending_transaction, deferred=True)
-
-    def _check_within_budget(self) -> bool:
-        """Check if currently within all category budgets."""
-        return all(
-            self.category_spent[cat] <= self.category_budgets[cat] * 1.1  # 10% tolerance
-            for cat in self.categories
-        )
-
-    def _calculate_reward(self) -> Reward:
-        """
-        Calculate comprehensive reward with multiple components.
-        Provides partial progress signals throughout episode.
-        """
-        # 1. Budget adherence reward (0 to 1, penalty if over)
-        overspended_categories = sum(
-            1 for cat in self.categories
-            if self.category_spent[cat] > self.category_budgets[cat]
-        )
-        
-        if overspended_categories > 0:
-            self.overspend_count += 1
-            budget_adherence = -0.5
-        else:
-            budget_adherence = min(1.0, 1.0 - (self.total_spent / self.monthly_budget) * 0.3)
-        
-        # 2. Savings progress reward
-        target_savings = self.monthly_budget * self.savings_goal_percentage
-        current_savings = self.monthly_budget - self.total_spent
-        savings_progress = min(1.0, max(0, current_savings / target_savings)) if target_savings > 0 else 1.0
-        
-        # 3. Category balance (reward diverse spending, penalize concentration)
-        spent_percentages = [
-            self.category_spent[cat] / max(1, self.category_budgets[cat])
-            for cat in self.categories
-        ]
-        avg_spend = sum(spent_percentages) / len(self.categories)
-        variance = sum((x - avg_spend) ** 2 for x in spent_percentages) / len(self.categories)
-        category_balance = max(-1.0, 1.0 - variance)  # Lower variance = higher reward
-        
-        # 4. Transaction decision reward
-        transaction_decision = 0.5
-        if self.pending_transaction:
-            if self.pending_transaction.is_discretionary and len(self.deferred_expenses) > 0:
-                transaction_decision = 1.0  # Good: deferred discretionary
-            elif not self.pending_transaction.is_discretionary:
-                transaction_decision = 0.8  # Good: essential expenses
-        
-        # Penalties
-        overspend_penalty = -0.3 * min(1.0, overspended_categories / len(self.categories))
-        
-        # Total reward (average of components, then apply penalties)
-        total = (budget_adherence + savings_progress + category_balance + transaction_decision) / 4.0
-        total = max(-1.0, min(1.0, total + overspend_penalty))
-        
-        return Reward(
-            total=total,
-            budget_adherence=budget_adherence,
-            savings_progress=savings_progress,
-            category_balance=category_balance,
-            transaction_decision=transaction_decision,
-            overspend_penalty=overspend_penalty,
-            poor_decisions=self.overspend_count,
-        )
-
-    def _grade_episode(self) -> Dict[str, float]:
-        """Grade the episode performance (for task graders)."""
-        final_savings = self.monthly_budget - self.total_spent
-        savings_rate = final_savings / self.monthly_budget
-        
-        return {
-            "final_savings": final_savings,
-            "savings_rate": savings_rate,
-            "days_on_budget": self.days_on_budget,
-            "budget_adherence_score": self.days_on_budget / 30,
-            "savings_goal_met": 1.0 if savings_rate >= self.savings_goal_percentage else 0.0,
-        }
-
-if __name__ == "__main__":
-    env = FinanceEnv()
-    state = env.reset()
-
-    for _ in range(5):
-        action = random.choice([0,1,2])
-        state, reward, done = env.step(action)
-        print(state, reward)
